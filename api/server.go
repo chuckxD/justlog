@@ -60,7 +60,8 @@ const (
 
 var (
 	userHourLimit    = 744.0
-	channelHourLimit = 24.0
+	// channelHourLimit = 24.0
+  channelHourLimit = float64(1000 * 60 * 60)
 )
 
 type channel struct {
@@ -351,6 +352,9 @@ func createLogResult() chatLog {
 func parseFromTo(from, to string, limit float64) (time.Time, time.Time, error) {
 	var fromTime time.Time
 	var toTime time.Time
+  log.Printf("currently this is user limit not channel, limit: %s", limit)
+  log.Printf("from: %s", from)
+  log.Printf("to: %s", to)
 
 	if from == "" && to == "" {
 		fromTime = time.Now().AddDate(0, -1, 0)
@@ -372,16 +376,30 @@ func parseFromTo(from, to string, limit float64) (time.Time, time.Time, error) {
 	} else {
 		var err error
 
-		fromTime, err = parseTimestamp(from)
+    fromInt, err := strconv.ParseInt(from, 10, 64)
+    log.Printf("fromInt: %s", fromInt)
+    fromTime := time.Unix(fromInt, 0)
+    log.Printf("fromTime: %s", fromTime)
+
 		if err != nil {
 			return fromTime, toTime, fmt.Errorf("Can't parse from timestamp: %s", err)
 		}
-		toTime, err = parseTimestamp(to)
+    toInt, err := strconv.ParseInt(to, 10, 64)
+    log.Printf("toInt: %s", toInt)
+    toTime := time.Unix(toInt, 0)
+    log.Printf("toTime: %s", toTime)
+
 		if err != nil {
 			return fromTime, toTime, fmt.Errorf("Can't parse to timestamp: %s", err)
 		}
 
-		if toTime.Sub(fromTime).Hours() > limit {
+
+    log.Printf("toTime.Sub(fromTime).Hours(): %s", toTime.Sub(fromTime).Hours())
+    log.Printf("limit: %s", limit)
+
+    msWindowToHours := float64((toInt - fromInt) / 60 / 60 / 1000)
+    log.Print("msWindowToHours: %s", msWindowToHours)
+		if msWindowToHours > limit {
 			return fromTime, toTime, errors.New("Timespan too big")
 		}
 	}
